@@ -13,5 +13,5 @@ Jump to https://github.com/philpoy/ArdiunoPonics/blob/master/app/src/main/java/c
 
 Code has no other fragments or any separated classes.   
 
-Media files at wiki tab.    
+Media files at wiki tab.    https://github.com/philpoy/ArdiunoPonics/wiki/Media
 Please open Issues for further discussions.
