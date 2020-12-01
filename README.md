@@ -1,6 +1,6 @@
 # ArdiunoPonics
-An android app made for receiving and displaying CSV from arduino. 
-Receive and display CSV from arduino. A hydroponic Monitoring app. still have issues with graphing.
+An android app made for receiving and displaying CSV from arduino.	
+		Receive and display CSV from arduino. A hydroponic Monitoring app. still have issues with graphing.
 
 Help!
 
