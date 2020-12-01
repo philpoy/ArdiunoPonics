@@ -4,3 +4,4 @@ Receive and display CSV from arduino. A hydroponic Monitoring app. still have is
 Help!
 if you want to run the project on your own, check the mipmaps. 
 I have included images in the app that were not uploaded here. these can cause errors.
+Jump to https://github.com/philpoy/ArdiunoPonics/blob/master/app/src/main/java/com/example/arduinoponics/ScrollingActivity.java
