@@ -249,8 +249,8 @@
             android:elevation="5dp"
             app:cardBackgroundColor="@android:color/transparent">
 
-            <com.github.mikephil.charting.charts.LineChart
-                android:id="@+id/lineChart"
+            <com.jjoe64.graphview.GraphView
+                android:id="@+id/graph"
                 android:layout_width="match_parent"
                 android:layout_height="450dp"
                 android:layout_margin="5dp"
