@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,19 +26,19 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.ekn.gruzer.gaugelibrary.ArcGauge;
 import com.ekn.gruzer.gaugelibrary.Range;
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.jjoe64.graphview.DefaultLabelFormatter;
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,16 +48,10 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
     TextView date, serialM, graphdescription;
     Button selectDate;
     ArcGauge GaugeTemp,GaugeHum;
-    LineChart lineChart;
-    LineDataSet aTempLine = new LineDataSet(null,null);
-    LineDataSet humLine = new LineDataSet(null,null);
-    ArrayList<ILineDataSet>iLineDataSets = new ArrayList<>();
-    LineData finalGraph;
-    //PieChart pieChart;
-    /*GraphView graph;
+    GraphView graph;
     private LineGraphSeries<DataPoint> aTemp,hum,wTemp,flowRate,pH;
     SimpleDateFormat sdformat = new SimpleDateFormat("HH:mm:ss");
-    SimpleDateFormat rtformat = new SimpleDateFormat("HH:mm:ss");*/
+    SimpleDateFormat rtformat = new SimpleDateFormat("HH:mm:ss");
 
     //for BtConnection
     private static final UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-0805f9b34fb"); //SPP UUID service
@@ -90,10 +83,7 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
         selectDate.setEnabled(false);
         btswitch = findViewById(R.id.btSwitch);
         graphdescription = findViewById(R.id.graphdescription);
-        btswitch.setClickable(false);
-
-        lineChart = findViewById(R.id.lineChart);
-        initializeChart();
+        graph = findViewById(R.id.graph);
 
         //inintialize Gauges
         initializeGaugeTemp();
@@ -109,7 +99,7 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
 
         //Message handler for received bytes
         msgH = new Handler() {
-            public void handleMessage(Message msg) {
+            public void handleMessage(android.os.Message msg) {
                 if (msg.what == RECEIVED) {
                     String readMessage = (String) msg.obj;
                     sb.append(readMessage);                                                // append string using string builder
@@ -129,44 +119,24 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
                                 GaugeTemp.setValue(Double.parseDouble(myUpdate[4]));
                                 GaugeHum.setValue(Double.parseDouble(myUpdate[5]));
 
-                                ArrayList<Entry> aTemp = new ArrayList<Entry>();
-                                ArrayList<String> time = new ArrayList<>();
-                                aTemp.add(new Entry(Float.parseFloat(myUpdate[4]),aTempLine.getEntryCount()));
-                                aTempLine.setYVals(aTemp);
-                                aTempLine.setLabel("Ambient Temp(C)");
+                                String tRaw = myUpdate[3]; Date mTime = rtformat.parse(tRaw); //convert string to date using simple date format
+                                graph.getGridLabelRenderer().setLabelFormatter(
+                                        new DateAsXAxisLabelFormatter(getApplicationContext(),rtformat));//change also x-label format to date format
 
-                                ArrayList<Entry> hum = new ArrayList<Entry>();
-                                hum.add(new Entry(Float.parseFloat(myUpdate[5]),humLine.getEntryCount()));
-                                humLine.setYVals(hum);
-                                humLine.setLabel("Humidity(%)");
+                                aTemp = new LineGraphSeries<DataPoint>();
+                                //aTemp = new LineGraphSeries<DataPoint>(new DataPoint[]{new DataPoint(mTime, Double.parseDouble(myUpdate[4]))});
+                                for (int i =0; i<10;i++){
+                                    aTemp.appendData(new DataPoint(mTime,Double.parseDouble(myUpdate[4])),true,10);
+                                }
+                                aTemp.setColor(Color.RED);
+                                aTemp.setDrawDataPoints(true);
 
-                                time.add(humLine.getEntryCount()-1,myUpdate[3]);
-
-                                aTempLine.setColor(Color.RED);
-                                aTempLine.setAxisDependency(YAxis.AxisDependency.LEFT);
-                                aTempLine.setLineWidth(3f);
-                                aTempLine.setCubicIntensity(0.2f);
-                                aTempLine.setValueTextSize(20f);
-
-                                humLine.setColor(Color.CYAN);
-                                humLine.setAxisDependency(YAxis.AxisDependency.LEFT);
-                                humLine.setLineWidth(3f);
-                                humLine.setCubicIntensity(0.2f);
-                                humLine.setValueTextSize(20f);
-
-                                iLineDataSets.clear();
-                                iLineDataSets.add(aTempLine);
-                                iLineDataSets.add(humLine);
-                                finalGraph =new LineData(time, iLineDataSets);
-                                //finalGraph.setValueTextSize(10f);
-                                //lineChart.clear();
-                                lineChart.setData(finalGraph);
-
-                                lineChart.moveViewToX(aTempLine.getEntryCount());
-                                lineChart.moveViewToX(humLine.getEntryCount());
-                                //finalGraph.notifyDataChanged();
-                                lineChart.notifyDataSetChanged();
-                                lineChart.invalidate();
+                                graph.addSeries(aTemp);// adds the data to chart
+                                graph.getGridLabelRenderer().setNumHorizontalLabels(3);
+                                graph.getViewport().setXAxisBoundsManual(true);
+                                graph.getViewport().scrollToEnd();
+                                graph.getViewport().setScrollable(true);
+                                graph.getViewport().setScalable(true);
 
                             } catch (Exception e) {//catch any errors
                             Log.e("update", e.toString());
@@ -180,6 +150,7 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
                         if (myUpdate[0].equals("T2")){ //if type 2 message is received
                             try {
                                 graphdescription.setText(myUpdate[1]);
+                                String tRaw = myUpdate[2]; Date mTime = sdformat.parse(tRaw); //parse string to date
                                 double mU3 = Double.parseDouble(myUpdate[3]);
                                 double mU4 = Double.parseDouble(myUpdate[4]);
                                 double mU5 = Double.parseDouble(myUpdate[5]);
@@ -189,9 +160,23 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
                                 serialM.append("Time: "+myUpdate[2]+", Ambient Temp(C): "+mU3+", Humidity: "+mU4+"%"+
                                         ", Water Temp(C): "+mU5+", Flow Rate(L/min): "+mU6+", pH: "+mU7+"\n");
 
+                                aTemp = new LineGraphSeries<>();
+                                graph.getGridLabelRenderer().setLabelFormatter(
+                                        new DateAsXAxisLabelFormatter(getApplicationContext(),rtformat));//change x-label format to date format
+                                aTemp.setColor(Color.RED);
+                                aTemp.setDrawDataPoints(true);
+                                aTemp.appendData(new DataPoint(mTime,mU3),true,5);
+
+                                graph.addSeries(aTemp);
+                                graph.getGridLabelRenderer().setNumHorizontalLabels(2);
+                                graph.getViewport().setXAxisBoundsManual(true);
+                                graph.getViewport().setScrollable(true); // enables horizontal scrolling
+                                graph.getViewport().scrollToEnd();
+
                             }catch (Exception e){
                                 Log.e("graph error:", e.toString());
                                 Toast.makeText(getApplicationContext(), "graph error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                                graph.removeAllSeries();
                             } /* try catch end */
                         } /* T2 end */
                     }
@@ -199,23 +184,6 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
             }
         };/* handler end */
 
-
-    }
-
-
-    private void initializeChart() {
-        //customize chart
-        lineChart.setDescription("");
-        lineChart.setNoDataTextDescription("No Data as of the moment");
-
-        //enable touch gesture
-        lineChart.setTouchEnabled(true);
-
-        //scaling and dragging
-        lineChart.setDragEnabled(true);
-        lineChart.setScaleEnabled(true);
-        lineChart.setDrawGridBackground(true);
-        lineChart.setPinchZoom(true);
     }
 
     private void initializeGaugeHum() {
@@ -282,7 +250,7 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnClick
                 @Override
                 public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
                     try {
-                       lineChart.removeAllViews();
+                        graph.removeAllSeries();//remove all series in graph view
 
                         if (dayOfMonth>10){
                             String sendDate = String.valueOf(year)+(monthOfYear+1)+(dayOfMonth)+".CSV";
